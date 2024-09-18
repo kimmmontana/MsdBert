@@ -103,7 +103,12 @@ def main():
     n_gpu = torch.cuda.device_count()
     logger.info("device: {} n_gpu: {}".format(device, n_gpu))
 
-    logger.info("************** Using: " + torch.cuda.get_device_name(0) + " ******************")
+
+    if torch.cuda.is_available():
+        logger.info("************** Using: " + torch.cuda.get_device_name(0) + " ******************")
+    else:
+        logger.info("************** Using CPU ******************")
+
     # set seed val
     np.random.seed(args.seed)
     torch.manual_seed(args.seed)
