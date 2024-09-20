@@ -92,6 +92,7 @@ class BertCoAttention(nn.Module):
 
     def forward(self, s1_hidden_states, s2_hidden_states, s2_attention_mask):
         # s2_attention_mask  b*1*1*49
+        print(f"def forward() at BertCoAttention Class (models.py): s1_hidden_state type is: {type(s1_hidden_states)}")
         mixed_query_layer = self.query(s1_hidden_states)  # b*75*768
         mixed_key_layer = self.key(s2_hidden_states)  # b*49*768
         mixed_value_layer = self.value(s2_hidden_states)
@@ -157,6 +158,7 @@ class BertCrossAttention(nn.Module):
         self.output = BertSelfOutput()
 
     def forward(self, s1_input_tensor, s2_input_tensor, s2_attention_mask):
+        print(f"def forward() at BertCorssAttention Class (models.py): s1_input_tensor type is: {type(s1_input_tensor )}")
         s1_cross_output = self.bertCoAttn(s1_input_tensor, s2_input_tensor, s2_attention_mask)
         attention_output = self.output(s1_cross_output, s1_input_tensor)
         return attention_output
@@ -187,7 +189,7 @@ class BertCrossEncoder(nn.Module):
 
     def forward(self, s1_hidden_states, s2_hidden_states, s2_attention_mask):
         for layer_module in self.layer:
-            s1_hidden_states = layer_module(s1_hidden_states, s2_hidden_states, s2_attention_mask)
+            s1_hidden_states = layer_module(s1_hidden_states, s2_hidden_states, s2_attention_mask) # FOR SOME REASON, THIS RETURNS A STRING. PLEASE CHECK.
         return s1_hidden_states
 
 
