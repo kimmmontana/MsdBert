@@ -45,7 +45,6 @@ class BertPooler(nn.Module):
         pooled_output = self.activation(pooled_output)
         return pooled_output
 
-
 class BertLayerNorm(nn.Module):
     def __init__(self, hidden_size, eps=1e-12):
         """Construct a layernorm module in the TF style (epsilon inside the square root).
@@ -92,6 +91,11 @@ class BertCoAttention(nn.Module):
 
     def forward(self, s1_hidden_states, s2_hidden_states, s2_attention_mask):
         # s2_attention_mask  b*1*1*49
+        print(f"def forward() at BertCoAttention Class (models.py): s1_hidden_state type is: {type(s1_hidden_states)} = {s1_hidden_states}")
+
+        """
+        S1_HIDDEN_STATES IS FOUND TO BE A STRING.
+        """
         mixed_query_layer = self.query(s1_hidden_states)  # b*75*768
         mixed_key_layer = self.key(s2_hidden_states)  # b*49*768
         mixed_value_layer = self.value(s2_hidden_states)
@@ -157,6 +161,10 @@ class BertCrossAttention(nn.Module):
         self.output = BertSelfOutput()
 
     def forward(self, s1_input_tensor, s2_input_tensor, s2_attention_mask):
+        print(f"def forward() at BertCorssAttention Class (models.py): s1_input_tensor type is: {type(s1_input_tensor )} = {s1_input_tensor}")
+        """
+        PLEASE ALSO CHECK IF THIS INPUT TENSORS ARE REALLY TENSORS OR STRING. (last check was str.)
+        """
         s1_cross_output = self.bertCoAttn(s1_input_tensor, s2_input_tensor, s2_attention_mask)
         attention_output = self.output(s1_cross_output, s1_input_tensor)
         return attention_output
@@ -165,12 +173,16 @@ class BertCrossAttention(nn.Module):
 class BertCrossAttentionLayer(nn.Module):
     def __init__(self):
         super(BertCrossAttentionLayer, self).__init__()
-        self.bertCorssAttn = BertCrossAttention()
+        """
+        Please check these functions. I think the output here is the problem
+        """
+        self.bertCrossAttn = BertCrossAttention()
         self.intermediate = BertIntermediate()
         self.output = BertOutput()
 
     def forward(self, s1_hidden_states, s2_hidden_states, s2_attention_mask):
-        attention_output = self.bertCorssAttn(s1_hidden_states, s2_hidden_states, s2_attention_mask)
+        print(f"def forward() at BertCrossAttentionLayer Class (models.py): s1_hidden_states type is: {type(s1_hidden_states )} = {s1_hidden_states}")
+        attention_output = self.bertCrossAttn(s1_hidden_states, s2_hidden_states, s2_attention_mask)
         # b*75*768
         intermediate_output = self.intermediate(attention_output)
         # b*75*3072
@@ -187,7 +199,15 @@ class BertCrossEncoder(nn.Module):
 
     def forward(self, s1_hidden_states, s2_hidden_states, s2_attention_mask):
         for layer_module in self.layer:
+            """
+                I want this checked. See logs. 
+                THIS IS WHAT CAUSES TO BE A STRING
+            """
+            print(f"def forward() at BertCrossEncoder Class (models.py): s1_hidden_states type is: {type(s1_hidden_states )} = {s1_hidden_states}")
+            print(f"def forward() at BertCrossEncoder Class (models.py): s2_hidden_states type is: {type(s2_hidden_states )} = {s2_hidden_states}")
+            print(f"def forward() at BertCrossEncoder Class (models.py): s2_attention_mask type is: {type(s2_attention_mask )} = {s2_attention_mask}")
             s1_hidden_states = layer_module(s1_hidden_states, s2_hidden_states, s2_attention_mask)
+            print(f"def forward() at BertCrossEncoder Class (models.py): s1_hidden_states type is: {type(s1_hidden_states )} = {s1_hidden_states} !!AFTER!!")
         return s1_hidden_states
 
 
@@ -206,6 +226,9 @@ class MsdBERT(nn.Module):
 
     def forward(self, input_ids, visual_embeds_att, input_mask, added_attention_mask, hashtag_input_ids,
                 hashtag_input_mask, labels=None):
+        """
+        This sequence_output gives str!
+        """
         sequence_output, pooled_output = self.bert(input_ids=input_ids, token_type_ids=None, attention_mask=input_mask)
         hashtag_output, hashtag_pooled_output = self.hashtag_bert(input_ids=hashtag_input_ids, token_type_ids=None,
                                                                   attention_mask=hashtag_input_mask)
@@ -223,6 +246,12 @@ class MsdBERT(nn.Module):
         # b*49*768
         visual = self.vismap2text(vis_embed_map)
         # b*75*768
+        """
+            Cross-attention?
+        """
+        print(f"def forward() at MsdBERT Class (models.py): sequence_output type is: {type(sequence_output )} = {sequence_output}")
+        print(f"def forward() at MsdBERT Class (models.py): visual type is: {type(visual )} = {visual}")
+        print(f"def forward() at MsdBERT Class (models.py): extended_img_mask type is: {type(extended_img_mask )} = {extended_img_mask}")
         image_text_cross_attn = self.text2image_attention(sequence_output, visual, extended_img_mask)
         # b*75*12
         C = self.tanh(torch.matmul(torch.matmul(sequence_output, self.W_b), hashtag_output.transpose(1,2)))
