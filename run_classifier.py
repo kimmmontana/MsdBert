@@ -145,7 +145,10 @@ def main():
     elif args.model_select == 'Res_BERT':
         model = Res_BERT()
     elif args.model_select == 'MsdBERT':
-        model = MsdBERT()
+        """
+        We're using MsdBERT here, so model must be MsdBERT().
+        """
+        model = MsdBERT() 
     else:
         raise ValueError("A model must be given.")
 
@@ -154,6 +157,12 @@ def main():
     encoder = myResnet(net).to(device)
 
     if n_gpu > 1:
+        """
+        https://pytorch.org/docs/stable/generated/torch.nn.DataParallel.html
+        since we only have 1 GPU, this will not be used.
+
+        else, we can do data parallel with the current model we using (hence the MsdBERT)
+        """
         model = torch.nn.DataParallel(model)
         encoder = torch.nn.DataParallel(encoder)
     param_optimizer = list(model.named_parameters())
@@ -205,10 +214,18 @@ def main():
                 train_hashtag_input_ids, train_hashtag_input_mask, train_label_ids = batch
                 imgs_f, img_mean, train_img_att = encoder(train_img_feats)
 
+
+                """
+                Model being trained here. Go to model.py
+                def forward() === model()
+                """
                 loss = model(train_input_ids, train_img_att, train_input_mask, train_added_input_mask,
                              train_hashtag_input_ids,
                              train_hashtag_input_mask, train_label_ids)
                 if n_gpu > 1:
+                    """
+                    Don't mind.
+                    """
                     loss = loss.mean()
                 loss.backward()
                 tr_loss += loss.item()
